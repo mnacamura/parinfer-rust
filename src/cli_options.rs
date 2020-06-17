@@ -109,6 +109,7 @@ impl Options {
                         lisp_vline_symbols: false,
                         lisp_block_comment: false,
                         scheme_sexp_comment: false,
+                        gauche_reader_syntax: false,
                         janet_long_strings: false
                     }
                 })
@@ -148,6 +149,9 @@ impl Options {
                             .map(|s| s == "true")
                             .unwrap(),
                         janet_long_strings: env::var("kak_opt_parinfer_janet_long_strings")
+                            .map(|s| s == "true")
+                            .unwrap(),
+                        gauche_reader_syntax: env::var("kak_opt_gauche_reader_syntax")
                             .map(|s| s == "true")
                             .unwrap()
                     }

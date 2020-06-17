@@ -237,6 +237,7 @@ struct State<'a> {
     lisp_reader_syntax_enabled: bool,
     lisp_block_comment_enabled: bool,
     scheme_sexp_comment_enabled: bool,
+    gauche_reader_syntax_enabled: bool,
     janet_long_strings_enabled: bool,
 
     quote_danger: bool,
@@ -280,6 +281,7 @@ fn get_initial_result<'a>(
     let lisp_reader_syntax_enabled = [
         options.lisp_block_comment,
         options.scheme_sexp_comment,
+        options.gauche_reader_syntax,
     ].iter().any(|is_true| *is_true);
 
     State {
@@ -326,6 +328,7 @@ fn get_initial_result<'a>(
         lisp_reader_syntax_enabled,
         lisp_block_comment_enabled: options.lisp_block_comment,
         scheme_sexp_comment_enabled: options.scheme_sexp_comment,
+        gauche_reader_syntax_enabled: options.gauche_reader_syntax,
         janet_long_strings_enabled: options.janet_long_strings,
 
         quote_danger: false,
@@ -866,6 +869,10 @@ fn in_lisp_reader_syntax_on_vline<'a>(result: &mut State<'a>) {
 fn in_lisp_reader_syntax_on_semicolon<'a>(result: &mut State<'a>) {
     result.context = In::Code;
 }
+fn in_lisp_reader_syntax_on_quote<'a>(result: &mut State<'a>) {
+    result.context = In::String { delim: result.ch };
+    cache_error_pos(result, ErrorName::UnclosedQuote);
+}
 
 fn in_lisp_block_comment_pre_on_vline<'a>(result: &mut State<'a>, depth: usize) {
     result.context = In::LispBlockComment { depth: depth + 1 };
@@ -964,6 +971,7 @@ fn on_context<'a>(result: &mut State<'a>) -> Result<()> {
             match ch {
                 DOUBLE_QUOTE => in_string_on_quote(result, delim),
                 VERTICAL_LINE if result.lisp_vline_symbols_enabled => in_string_on_quote(result, delim),
+                "/" if result.gauche_reader_syntax_enabled => in_string_on_quote(result, delim),
                 _ => (),
             }
         },
@@ -971,6 +979,7 @@ fn on_context<'a>(result: &mut State<'a>) -> Result<()> {
             match ch {
                 VERTICAL_LINE if result.lisp_block_comment_enabled => in_lisp_reader_syntax_on_vline(result),
                 ";" if result.scheme_sexp_comment_enabled => in_lisp_reader_syntax_on_semicolon(result),
+                "/" if result.gauche_reader_syntax_enabled => in_lisp_reader_syntax_on_quote(result),
                 _ => {
                     // Backtrack!
                     result.context = In::Code;

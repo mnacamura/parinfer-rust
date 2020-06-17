@@ -126,6 +126,7 @@ fn make_option() -> Result<Options> {
     lisp_vline_symbols: false,
     lisp_block_comment: false,
     scheme_sexp_comment: false,
+    gauche_reader_syntax: false,
     janet_long_strings: false,
   })
 }
@@ -160,6 +161,7 @@ fn new_options(
     lisp_vline_symbols: false,
     lisp_block_comment: false,
     scheme_sexp_comment: false,
+    gauche_reader_syntax: false,
     janet_long_strings: false,
   })
 }

@@ -19,6 +19,9 @@ endif
 if !exists('g:parinfer_scheme_sexp_comment')
   let g:parinfer_scheme_sexp_comment = 0
 endif
+if !exists('g:parinfer_gauche_reader_syntax')
+  let g:parinfer_gauche_reader_syntax = 0
+endif
 if !exists('g:parinfer_janet_long_strings')
   let g:parinfer_janet_long_strings = 0
 endif
@@ -178,6 +181,9 @@ function! s:process_buffer() abort
   if !exists('b:parinfer_scheme_sexp_comment')
     let b:parinfer_scheme_sexp_comment = g:parinfer_scheme_sexp_comment
   endif
+  if !exists('b:parinfer_gauche_reader_syntax')
+    let b:parinfer_gauche_reader_syntax = g:parinfer_gauche_reader_syntax
+  endif
   if !exists('b:parinfer_janet_long_strings')
     let b:parinfer_janet_long_strings = g:parinfer_janet_long_strings
   endif
@@ -194,6 +200,7 @@ function! s:process_buffer() abort
                                  \ "lispVlineSymbols": b:parinfer_lisp_vline_symbols ? v:true : v:false,
                                  \ "lispBlockComment": b:parinfer_lisp_block_comment ? v:true : v:false,
                                  \ "schemeSexpComment": b:parinfer_scheme_sexp_comment ? v:true : v:false,
+                                 \ "gaucheReaderSyntax": b:parinfer_gauche_reader_syntax ? v:true : v:false,
                                  \ "janetLongStrings": b:parinfer_janet_long_strings ? v:true : v:false,
                                  \ "prevCursorX": w:parinfer_previous_cursor[2],
                                  \ "prevCursorLine": w:parinfer_previous_cursor[1],

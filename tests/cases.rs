@@ -150,6 +150,8 @@ struct Options {
     #[serde(skip_serializing_if = "Option::is_none")]
     scheme_sexp_comment: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    gauche_reader_syntax: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     janet_long_strings: Option<bool>,
 }
 
@@ -285,6 +287,7 @@ pub fn composed_unicode_graphemes_count_as_a_single_character() {
             lisp_vline_symbols: None,
             lisp_block_comment: None,
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -329,6 +332,7 @@ pub fn graphemes_in_changes_are_counted_correctly() {
             lisp_vline_symbols: None,
             lisp_block_comment: None,
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -373,6 +377,7 @@ pub fn wide_characters() {
             lisp_vline_symbols: None,
             lisp_block_comment: None,
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -410,6 +415,7 @@ pub fn lisp_vline_symbols() {
             lisp_vline_symbols: Some(true),
             lisp_block_comment: None,
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -447,6 +453,7 @@ pub fn lisp_sharp_syntax_backtrack() {
             lisp_vline_symbols: None,
             lisp_block_comment: Some(true),
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -484,6 +491,7 @@ pub fn lisp_block_comment() {
             lisp_vline_symbols: None,
             lisp_block_comment: Some(true),
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -521,6 +529,45 @@ pub fn scheme_sexp_comment() {
             lisp_vline_symbols: None,
             lisp_block_comment: None,
             scheme_sexp_comment: Some(true),
+            gauche_reader_syntax: None,
+            janet_long_strings: None,
+            prev_cursor_x: None,
+            prev_cursor_line: None
+        }
+    };
+    let input = json!({
+        "mode": "indent",
+        "text": &case.text,
+        "options": &case.options
+    }).to_string();
+    let answer: serde_json::Value = serde_json::from_str(&run(&input)).unwrap();
+    case.check2(answer);
+}
+
+#[test]
+pub fn gauche_regexp_syntax() {
+    let case = Case {
+        text: String::from("(let1 re #/broken|regexp)/ (re \"broken\"))"),
+        result: CaseResult {
+            text: String::from("(let1 re #/broken|regexp)/ (re \"broken\"))"),
+            success: true,
+            error: None,
+            cursor_x: None,
+            cursor_line: None,
+            tab_stops: None,
+            paren_trails: None
+        },
+        source: Source {
+            line_no: 0
+        },
+        options: Options {
+            cursor_x: None,
+            cursor_line: None,
+            changes: None,
+            lisp_vline_symbols: None,
+            lisp_block_comment: None,
+            scheme_sexp_comment: None,
+            gauche_reader_syntax: Some(true),
             janet_long_strings: None,
             prev_cursor_x: None,
             prev_cursor_line: None
@@ -558,6 +605,7 @@ pub fn janet_long_strings() {
             lisp_vline_symbols: None,
             lisp_block_comment: None,
             scheme_sexp_comment: None,
+            gauche_reader_syntax: None,
             janet_long_strings: Some(true),
             prev_cursor_x: None,
             prev_cursor_line: None

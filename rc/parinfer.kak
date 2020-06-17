@@ -53,6 +53,9 @@ bool parinfer_scheme_sexp_comment false
 declare-option -docstring "Parse Janet-style long string" \
 bool parinfer_janet_long_strings false
 
+declare-option -docstring "Parse Gauche-style #/regexp/ and #[charset]" \
+bool parinfer_gauche_reader_syntax false
+
 declare-option -hidden str parinfer_previous_text
 declare-option -hidden str parinfer_previous_cursor_char_column
 declare-option -hidden str parinfer_previous_cursor_line
@@ -114,6 +117,7 @@ parinfer -params ..2 %{
             # kak_opt_parinfer_lisp_block_comment
             # kak_opt_parinfer_scheme_sexp_comment
             # kak_opt_parinfer_janet_long_strings
+            # kak_opt_parinfer_gauche_reader_syntax
             exec parinfer-rust --mode=$mode --input-format=kakoune --output-format=kakoune
         }
         evaluate-commands %{
