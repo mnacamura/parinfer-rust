@@ -583,6 +583,82 @@ pub fn gauche_regexp_syntax() {
 }
 
 #[test]
+pub fn gauche_charset_syntax() {
+    let case = Case {
+        text: String::from("(let1 charset #[)] charset)"),
+        result: CaseResult {
+            text: String::from("(let1 charset #[)] charset)"),
+            success: true,
+            error: None,
+            cursor_x: None,
+            cursor_line: None,
+            tab_stops: None,
+            paren_trails: None
+        },
+        source: Source {
+            line_no: 0
+        },
+        options: Options {
+            cursor_x: None,
+            cursor_line: None,
+            changes: None,
+            lisp_vline_symbols: None,
+            lisp_block_comment: None,
+            scheme_sexp_comment: None,
+            gauche_reader_syntax: Some(true),
+            janet_long_strings: None,
+            prev_cursor_x: None,
+            prev_cursor_line: None
+        }
+    };
+    let input = json!({
+        "mode": "paren",
+        "text": &case.text,
+        "options": &case.options
+    }).to_string();
+    let answer: serde_json::Value = serde_json::from_str(&run(&input)).unwrap();
+    case.check2(answer);
+}
+
+#[test]
+pub fn gauche_charset_syntax_posix_charset_literal() {
+    let case = Case {
+        text: String::from("(let ([charset #[[:alnum:]]]) charset)"),
+        result: CaseResult {
+            text: String::from("(let ([charset #[[:alnum:]]]) charset)"),
+            success: true,
+            error: None,
+            cursor_x: None,
+            cursor_line: None,
+            tab_stops: None,
+            paren_trails: None
+        },
+        source: Source {
+            line_no: 0
+        },
+        options: Options {
+            cursor_x: None,
+            cursor_line: None,
+            changes: None,
+            lisp_vline_symbols: None,
+            lisp_block_comment: None,
+            scheme_sexp_comment: None,
+            gauche_reader_syntax: Some(true),
+            janet_long_strings: None,
+            prev_cursor_x: None,
+            prev_cursor_line: None
+        }
+    };
+    let input = json!({
+        "mode": "paren",
+        "text": &case.text,
+        "options": &case.options
+    }).to_string();
+    let answer: serde_json::Value = serde_json::from_str(&run(&input)).unwrap();
+    case.check2(answer);
+}
+
+#[test]
 pub fn janet_long_strings() {
     let case = Case {
         text: String::from("(def foo {:bar `Not a closing parenthesis )`})"),

@@ -166,6 +166,11 @@ enum In<'a> {
     LispBlockCommentPost { depth: usize },
     JanetLongStringPre { open_delim_len: usize },
     JanetLongString { open_delim_len: usize, close_delim_len: usize },
+    GaucheCharSet,
+    GaucheCharSetCloseBracket,
+    GaucheCharSetPosixPre,
+    GaucheCharSetPosix,
+    GaucheCharSetPosixPost,
 }
 
 impl<'a> State<'a> {
@@ -187,8 +192,16 @@ impl<'a> State<'a> {
             In::LispBlockCommentPost {..} => true,
             In::JanetLongStringPre {..} => true,
             In::JanetLongString {..} => true,
+            In::GaucheCharSet => true,
+            In::GaucheCharSetCloseBracket => true,
+            In::GaucheCharSetPosixPre => true,
+            In::GaucheCharSetPosix => true,
+            In::GaucheCharSetPosixPost => true,
             _ => false
         }
+    }
+    fn is_in_gauche_charset_close_bracket(&'a self) -> bool {
+        match self.context { In::GaucheCharSetCloseBracket => true, _ => false }
     }
 }
 
@@ -667,8 +680,14 @@ fn is_whitespace<'a>(result: &State<'a>) -> bool {
 
 fn is_closable<'a>(result: &State<'a>) -> bool {
     let ch = result.ch;
-    let closer = is_close_paren(ch) && !result.is_escaped();
-    return result.is_in_code() && !is_whitespace(result) && ch != "" && !closer;
+    if result.is_in_code() {
+        let closer = is_close_paren(ch) && !result.is_escaped();
+        !is_whitespace(result) && ch != "" && !closer
+    } else if result.is_in_gauche_charset_close_bracket() {
+        true  // Gauche's #[charset] has closing ] but it is closable.
+    } else {
+        false
+    }
 }
 
 
@@ -873,6 +892,10 @@ fn in_lisp_reader_syntax_on_quote<'a>(result: &mut State<'a>) {
     result.context = In::String { delim: result.ch };
     cache_error_pos(result, ErrorName::UnclosedQuote);
 }
+fn in_lisp_reader_syntax_on_open_bracket<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSet;
+    cache_error_pos(result, ErrorName::UnclosedQuote);
+}
 
 fn in_lisp_block_comment_pre_on_vline<'a>(result: &mut State<'a>, depth: usize) {
     result.context = In::LispBlockComment { depth: depth + 1 };
@@ -920,6 +943,28 @@ fn in_janet_long_string_on_else<'a>(result: &mut State<'a>, open_delim_len: usiz
     if close_delim_len > 0 {
         result.context = In::JanetLongString { open_delim_len, close_delim_len: 0 };
     }
+}
+
+fn in_gauche_charset_on_open_bracket<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSetPosixPre;
+}
+fn in_gauche_charset_on_close_bracket<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSetCloseBracket;
+}
+fn in_gauche_charset_posix_pre_on_colon<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSetPosix;
+}
+fn in_gauche_charset_posix_pre_on_else<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSet;
+}
+fn in_gauche_charset_posix_on_colon<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSetPosixPost;
+}
+fn in_gauche_charset_posix_post_on_close_bracket<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSet;
+}
+fn in_gauche_charset_posix_post_on_else<'a>(result: &mut State<'a>) {
+    result.context = In::GaucheCharSetPosix;
 }
 
 fn on_backslash<'a>(result: &mut State<'a>) {
@@ -980,6 +1025,7 @@ fn on_context<'a>(result: &mut State<'a>) -> Result<()> {
                 VERTICAL_LINE if result.lisp_block_comment_enabled => in_lisp_reader_syntax_on_vline(result),
                 ";" if result.scheme_sexp_comment_enabled => in_lisp_reader_syntax_on_semicolon(result),
                 "/" if result.gauche_reader_syntax_enabled => in_lisp_reader_syntax_on_quote(result),
+                "[" if result.gauche_reader_syntax_enabled => in_lisp_reader_syntax_on_open_bracket(result),
                 _ => {
                     // Backtrack!
                     result.context = In::Code;
@@ -1018,6 +1064,32 @@ fn on_context<'a>(result: &mut State<'a>) -> Result<()> {
                 _ => in_janet_long_string_on_else(result, open_delim_len, close_delim_len),
             }
         },
+        In::GaucheCharSet => {
+            match ch {
+                "[" => in_gauche_charset_on_open_bracket(result),
+                "]" => in_gauche_charset_on_close_bracket(result),
+                _ => (),
+            }
+        },
+        In::GaucheCharSetPosixPre => {
+            match ch {
+                ":" => in_gauche_charset_posix_pre_on_colon(result),
+                _ => in_gauche_charset_posix_pre_on_else(result),
+            }
+        },
+        In::GaucheCharSetPosix => {
+            match ch {
+                ":" => in_gauche_charset_posix_on_colon(result),
+                _ => (),
+            }
+        },
+        In::GaucheCharSetPosixPost => {
+            match ch {
+                "]" => in_gauche_charset_posix_post_on_close_bracket(result),
+                _ => in_gauche_charset_posix_post_on_else(result),
+            }
+        },
+        _ => (),
     }
 
     Ok(())
@@ -1045,6 +1117,10 @@ fn on_char<'a>(result: &mut State<'a>) -> Result<()> {
         let line_no = result.line_no;
         let x = result.x;
         reset_paren_trail(result, line_no, x + UnicodeWidthStr::width(ch));
+    }
+
+    if result.is_in_gauche_charset_close_bracket() {
+        result.context = In::Code;
     }
 
     let state = result.tracking_arg_tab_stop;
